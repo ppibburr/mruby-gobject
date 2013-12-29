@@ -5,26 +5,27 @@ if ARGV.length > 0
   exit(1)
 end
 
-FileUtils.mkdir_p d="./tmp/dummy_source"
 
-Dir.chdir d
 
-File.open "document.rb", "w" do |f|
+`rm -rf ./tmp`
+`mkdir ./tmp`
+
+File.open("./tmp/runner.rb","w") do |f|
   f.puts DATA.read
 end
+runner = File.expand_path("./tmp/runner.rb")
+od = File.expand_path(Dir.getwd)
+`rm -rf doc`
+Dir.chdir("../mruby-girffi-docgen-html/")
+system "ruby bin/docgen --lib=GObject --runner=#{runner}"
+`cp -rf ./tmp/doc #{od}/`
+`rm -rf ./tmp`
 
-system "mruby document.rb"
-system "yard doc gobject*.rb"
+Dir.chdir od
+`rm -rf ./tmp`
 
-# FileUtils.rm_f "../../doc"
-`rm -rf ../../doc`
-FileUtils.mv "doc", "../../"
-
-Dir.chdir "../../"
-`rm -rf tmp`
 
 __END__
-
 DocGen.overide GObject::Object, :get_property do
   param :name => [String, "The property name"]
   returns Object, "The value"
@@ -45,8 +46,6 @@ DocGen.overide GObject::Object, :signal_connect do
 end
 
 dg = DocGen.new(GObject)
-
 ns = dg.document
-
-YARDGenerator.generate(ns)
-
+g = DocGen::Generator::HTML.new(ns)
+g.generate
